@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "music-submission-bot": {
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\adamb\\Downloads\\test\""
+    }
+  }
+}

@@ -1,0 +1,10 @@
+node_modules
+cypress/fixtures/data.json
+/music-submission-bot/bin/Debug/netcoreapp3.1/client_secrets.json
+/music-submission-bot/bin/Debug/netcoreapp3.1
+/music-submission-bot/.vs/music-submission-bot/v16
+/music-submission-bot/obj
+/music-submission-bot/.vs/music-submission-bot/config
+/music-submission-bot/client_secrets.json
+music-submission-bot/bin/Release/netcoreapp3.1/client_secrets.json
+music-submission-bot/publish/client_secrets.json
