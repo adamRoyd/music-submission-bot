@@ -1,19 +1,22 @@
-﻿using Dropbox.Api;
-using Dropbox.Api.Files;
-using Google.Apis.Auth.OAuth2;
-using Google.Apis.Services;
-using Google.Apis.Sheets.v4;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
+using Dropbox.Api;
+using Dropbox.Api.Files;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Sheets.v4;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
-namespace music_submission_bot
+namespace ID3Bot
 {
-    class Program
+    public class ID3Bot
     {
         const string UntaggedFolderPath = "/[untagged]";
         const string TaggedFolderPath = "/[tagged]";
@@ -26,7 +29,23 @@ namespace music_submission_bot
         private static IList<Song> _songs;
         private static DropboxClient _dropboxClient;
 
-        public static async Task Main(string[] args)
+        private MailService _mailService;
+
+        private readonly IConfiguration _configuration;
+
+        public ID3Bot(IConfiguration configuration)
+        {
+            _configuration = configuration;
+            _mailService = new MailService(configuration);
+        }
+
+        // At 9:30 every fri
+        // 0 30 9 * * Fri
+
+        // Every 20 seconds
+        // */30 * * * * *
+        [FunctionName("Process")]
+        public async Task Run([TimerTrigger("*/30 * * * * *")]TimerInfo myTimer, ILogger log)
         {
             await LoadSongs();
             _dropboxClient = InitialiseDropboxClient();
@@ -48,14 +67,17 @@ namespace music_submission_bot
                     continue;
                 }
             }
+
+            await _mailService.SendMailAsync();
+
+            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
         }
 
-        private static DropboxClient InitialiseDropboxClient()
-        {
-            //TODO make this a secret
-            const string RefreshToken = "pllxHOczeRoAAAAAAAAAAWg1oc1CRI9vr78EuJCdQ6rLdl0REuZnGTZD-uUOMq3L";
+        private DropboxClient InitialiseDropboxClient()
+        {            
+            string RefreshToken = _configuration["DROPBOX_REFRESH_TOKEN"];
             const string AppKey = "gxy0shh0yvtwjt3";
-            const string AppSecret = "";
+            string AppSecret = _configuration["DROPBOX_APP_SECRET"];
 
             var httpClient = new HttpClient()
             {
@@ -91,7 +113,7 @@ namespace music_submission_bot
 
             ValidateSong(song);
 
-            Console.WriteLine($"Song match – {song.Title}");
+            Console.WriteLine($"Song match � {song.Title}");
 
             var track = TagLib.File.Create(file);
 
@@ -150,16 +172,24 @@ namespace music_submission_bot
             }
         }
 
-        private static async Task LoadSongs()
-        {
-            GoogleCredential credential;
-            using (var stream = new FileStream("client_secrets.json", FileMode.Open, FileAccess.Read))
+        private async Task LoadSongs()
+        {            
+            string credentials = JsonConvert.SerializeObject(new
             {
-                credential = GoogleCredential.FromStream(stream)
-                    .CreateScoped(Scopes);
-            }
+                type = "service_account",
+                project_id = "music-emailer",
+                private_key_id = _configuration["GOOGLE_SHEETS_PRIVATE_KEY_ID"],
+                private_key = _configuration["GOOGLE_SHEETS_PRIVATE_KEY"],
+                client_email = "adam-585@music-emailer.iam.gserviceaccount.com",
+                client_id = "108236675381130113762",
+                auth_uri = "https://accounts.google.com/o/oauth2/auth",
+                token_uri = "https://oauth2.googleapis.com/token",
+                auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs",
+                client_x509_cert_url = "https://www.googleapis.com/robot/v1/metadata/x509/adam-585%40music-emailer.iam.gserviceaccount.com"
+            });
 
-            // Create Google Sheets API service.
+            GoogleCredential credential = GoogleCredential.FromJson(credentials).CreateScoped(Scopes);
+
             service = new SheetsService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
@@ -209,7 +239,7 @@ namespace music_submission_bot
             var bytes = await File.ReadAllBytesAsync(file.Name);
             var stream = new MemoryStream(bytes);
 
-            await _dropboxClient.Files.UploadAsync(new Dropbox.Api.Files.UploadArg($"{TaggedFolderPath}/{file.Name}"), stream);
+            await _dropboxClient.Files.UploadAsync(new UploadArg($"{TaggedFolderPath}/{file.Name}"), stream);
 
             File.Delete(file.Name);
         }

@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "music-submission-bot", "music-submission-bot.csproj", "{792D2E36-CC7B-4105-885A-32B61E4AC292}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "music-submission-bot", "music-submission-bot.csproj", "{792D2E36-CC7B-4105-885A-32B61E4AC292}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ID3Bot", "..\ID3Bot\ID3Bot.csproj", "{1AB112B9-4390-4BB6-A402-6A14A802A6D3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{792D2E36-CC7B-4105-885A-32B61E4AC292}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{792D2E36-CC7B-4105-885A-32B61E4AC292}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{792D2E36-CC7B-4105-885A-32B61E4AC292}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AB112B9-4390-4BB6-A402-6A14A802A6D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AB112B9-4390-4BB6-A402-6A14A802A6D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AB112B9-4390-4BB6-A402-6A14A802A6D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AB112B9-4390-4BB6-A402-6A14A802A6D3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
