@@ -45,7 +45,7 @@ namespace ID3Bot
         // Every 20 seconds
         // */30 * * * * *
         [FunctionName("Process")]
-        public async Task Run([TimerTrigger("*/30 * * * * *")]TimerInfo myTimer, ILogger log)
+        public async Task Run([TimerTrigger("0 30 9 * * Fri")]TimerInfo myTimer, ILogger log)
         {
             await LoadSongs();
             _dropboxClient = InitialiseDropboxClient();
