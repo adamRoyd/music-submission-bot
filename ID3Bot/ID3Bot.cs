@@ -28,6 +28,7 @@ namespace ID3Bot
         static SheetsService service;
         private static IList<Song> _songs;
         private static DropboxClient _dropboxClient;
+        private string _tempPath;
 
         private MailService _mailService;
 
@@ -37,6 +38,7 @@ namespace ID3Bot
         {
             _configuration = configuration;
             _mailService = new MailService(configuration);
+            _tempPath = Path.GetTempPath();
         }
 
         // At 9:30 every fri
@@ -59,14 +61,14 @@ namespace ID3Bot
             {
                 try
                 {
-                    await DownloadFileAndSaveLocally(file);
+                    await DownloadFileAndSaveLocally(file, log);
 
                     SetId3Tags(file.Name, log);
-                    await UploadFileAndDeleteLocally(file);
+                    await UploadFileAndDeleteLocally(file, log);
                 }
                 catch (Exception e)
                 {
-                    log.LogInformation($"Error settings tags for file {file.Name} Exception {e.Message}");
+                    log.LogInformation($"Error setting tags for file {file.Name} Exception {e.Message}");
                     continue;
                 }
             }
@@ -101,26 +103,22 @@ namespace ID3Bot
             return client;
         }
 
-        private static void SetId3Tags(string file, ILogger log)
+        private void SetId3Tags(string file, ILogger log)
         {
             var fileName = file.Split("\\")[^1];
-
-            Console.WriteLine(fileName);
 
             var song = _songs.FirstOrDefault(song => fileName.Contains(song.Title, StringComparison.CurrentCultureIgnoreCase) && song.Artists.Any(fileName.Contains));
 
             if (song == null)
             {
-                Console.WriteLine($"Could not find Google Sheet row for {fileName}");
                 log.LogInformation($"Could not find Google Sheet row for {fileName}");
             }
 
             ValidateSong(song);
 
-            Console.WriteLine($"Song match – {song.Title}");
             log.LogInformation($"Song match – {song.Title}");
 
-            var track = TagLib.File.Create(file);
+            var track = TagLib.File.Create($"{_tempPath}\\{file}");
 
             uint bpm;
 
@@ -239,22 +237,27 @@ namespace ID3Bot
             }
         }
 
-        private static async Task UploadFileAndDeleteLocally(Metadata file)
+        private async Task UploadFileAndDeleteLocally(Metadata file, ILogger log)
         {
-            var bytes = await File.ReadAllBytesAsync(file.Name);
+            log.LogInformation($"Reading file to bytes");
+            var bytes = await File.ReadAllBytesAsync($"{_tempPath}\\{file.Name}");
             var stream = new MemoryStream(bytes);
 
+            log.LogInformation($"Uploading file to dropbox");
             await _dropboxClient.Files.UploadAsync(new UploadArg($"{TaggedFolderPath}/{file.Name}"), stream);
 
-            File.Delete(file.Name);
+            log.LogInformation($"Deleting file from disk");
+            File.Delete($"{_tempPath}\\{file.Name}");
         }
 
-        private static async Task DownloadFileAndSaveLocally(Metadata file)
+        private async Task DownloadFileAndSaveLocally(Metadata file, ILogger log)
         {
+            log.LogInformation($"Downloading {file.Name} from dropbox");
             var downloadResponse = await _dropboxClient.Files.DownloadAsync($"{UntaggedFolderPath}/{file.Name}");
             var content = await downloadResponse.GetContentAsByteArrayAsync();
 
-            await File.WriteAllBytesAsync(file.Name, content);
+            log.LogInformation($"Saving {file.Name} to disk");
+            await File.WriteAllBytesAsync($"{_tempPath}\\{file.Name}", content);
         }
 
         private static void ValidateSong(Song song)
