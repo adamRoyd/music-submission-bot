@@ -47,6 +47,7 @@ namespace ID3Bot
         [FunctionName("Process")]
         public async Task Run([TimerTrigger("0 30 9 * * Fri")]TimerInfo myTimer, ILogger log)
         {
+            log.LogInformation($"I am running!");
             await LoadSongs();
             _dropboxClient = InitialiseDropboxClient();
 
@@ -68,7 +69,7 @@ namespace ID3Bot
                 }
             }
 
-            await _mailService.SendMailAsync();
+            //await _mailService.SendMailAsync();
 
             log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
         }
