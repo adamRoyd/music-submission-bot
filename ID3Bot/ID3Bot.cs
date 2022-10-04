@@ -48,10 +48,12 @@ namespace ID3Bot
         public async Task Run([TimerTrigger("0 30 9 * * Fri")]TimerInfo myTimer, ILogger log)
         {
             log.LogInformation($"I am running!");
-            await LoadSongs();
+            await LoadSongs(log);
             _dropboxClient = InitialiseDropboxClient();
 
             ListFolderResult files = await _dropboxClient.Files.ListFolderAsync(UntaggedFolderPath);
+
+            log.LogInformation($"Number of files found: {files.Entries.Count}");
 
             foreach (var file in files.Entries)
             {
@@ -59,12 +61,12 @@ namespace ID3Bot
                 {
                     await DownloadFileAndSaveLocally(file);
 
-                    SetId3Tags(file.Name);
+                    SetId3Tags(file.Name, log);
                     await UploadFileAndDeleteLocally(file);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
-                    // log here
+                    log.LogInformation($"Error settings tags for file {file.Name} Exception {e.Message}");
                     continue;
                 }
             }
@@ -99,7 +101,7 @@ namespace ID3Bot
             return client;
         }
 
-        private static void SetId3Tags(string file)
+        private static void SetId3Tags(string file, ILogger log)
         {
             var fileName = file.Split("\\")[^1];
 
@@ -110,11 +112,13 @@ namespace ID3Bot
             if (song == null)
             {
                 Console.WriteLine($"Could not find Google Sheet row for {fileName}");
+                log.LogInformation($"Could not find Google Sheet row for {fileName}");
             }
 
             ValidateSong(song);
 
             Console.WriteLine($"Song match – {song.Title}");
+            log.LogInformation($"Song match – {song.Title}");
 
             var track = TagLib.File.Create(file);
 
@@ -148,7 +152,7 @@ namespace ID3Bot
 
             track.Save();
 
-            Console.WriteLine($"ID3 tags added");
+            log.LogInformation($"ID3 tags added");
         }
 
         private static void SetISRCs(string file, Song song, TagLib.File track, string fileName)
@@ -173,7 +177,7 @@ namespace ID3Bot
             }
         }
 
-        private async Task LoadSongs()
+        private async Task LoadSongs(ILogger log)
         {            
             string credentials = JsonConvert.SerializeObject(new
             {
@@ -231,7 +235,7 @@ namespace ID3Bot
             }
             else
             {
-                Console.WriteLine("No data found.");
+                log.LogInformation("No data found.");
             }
         }
 
