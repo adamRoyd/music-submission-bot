@@ -18,12 +18,12 @@ namespace ID3Bot
 {
     public class ID3Bot
     {
-        const string UntaggedFolderPath = "/[untagged]";
-        const string TaggedFolderPath = "/[tagged]";
+        const string UntaggedFolderPath = "/dojang processing/[untagged]";
+        const string TaggedFolderPath = "/dojang processing/[tagged]";
 
         static readonly string[] Scopes = { SheetsService.Scope.Spreadsheets };
         static readonly string ApplicationName = "Mp3TagBot";
-        static readonly string SpreadsheetId = "1_8VQLO2p0rrE4YrYHozMnSDjJG9nki2QoMRF-HUbBok";
+        static readonly string SpreadsheetId = "15lU6p6ixDEC0qaRYuhfumLPK37pkolLfPaq0m48vfkg";
         static readonly string sheet = "songs";
         static SheetsService service;
         private static IList<Song> _songs;
@@ -81,7 +81,7 @@ namespace ID3Bot
         private DropboxClient InitialiseDropboxClient()
         {            
             string RefreshToken = _configuration["DROPBOX_REFRESH_TOKEN"];
-            const string AppKey = "gxy0shh0yvtwjt3";
+            const string AppKey = "rhgux835nkmyppw";
             string AppSecret = _configuration["DROPBOX_APP_SECRET"];
 
             var httpClient = new HttpClient()
