@@ -19,7 +19,6 @@ namespace ID3Bot
     public class ID3Bot
     {
         const string UntaggedFolderPath = "/dojang processing/[untagged]";
-        const string TaggedFolderPath = "/dojang processing/[tagged]";
 
         static readonly string[] Scopes = { SheetsService.Scope.Spreadsheets };
         static readonly string ApplicationName = "Mp3TagBot";
@@ -46,6 +45,9 @@ namespace ID3Bot
 
         // Every 20 seconds
         // */30 * * * * *
+
+        // Every 10 minutes
+        // */10 * * * *
         [FunctionName("Process")]
         public async Task Run([TimerTrigger("0 30 9 * * Fri")]TimerInfo myTimer, ILogger log)
         {
@@ -53,11 +55,11 @@ namespace ID3Bot
             await LoadSongs(log);
             _dropboxClient = InitialiseDropboxClient();
 
-            ListFolderResult files = await _dropboxClient.Files.ListFolderAsync(UntaggedFolderPath);
+            ListFolderResult files = await _dropboxClient.Files.ListFolderAsync(UntaggedFolderPath, recursive: true);
 
             log.LogInformation($"Number of files found: {files.Entries.Count}");
 
-            foreach (var file in files.Entries)
+            foreach (var file in files.Entries.Where(entry => entry.AsFile != null))
             {
                 try
                 {
@@ -129,15 +131,15 @@ namespace ID3Bot
             uint.TryParse(song.Year, out year);
 
             track.Tag.Album = song.Release;
-            track.Tag.AlbumArtists = song.Artists;
+            track.Tag.AlbumArtists = new string[] { string.Join(",", song.Artists) };
             track.Tag.BeatsPerMinute = bpm;
             track.Tag.Copyright = $"{song.Year} dojang";
             track.Tag.Comment = song.Comment;
-            track.Tag.Composers = song.Artists;
+            track.Tag.Composers = new string[] { string.Join(",", song.Artists) };
             track.Tag.Genres = new string[] { song.Genre };
             track.Tag.Grouping = song.Grouping;
             track.Tag.Length = track.Properties.Duration.ToString();
-            track.Tag.Performers = song.Artists;
+            track.Tag.Performers = new string[] { string.Join(",", song.Artists) };
             track.Tag.Publisher = song.Publisher;
             track.Tag.Year = year;
             track.Tag.InitialKey = song.Key;
@@ -244,7 +246,8 @@ namespace ID3Bot
             var stream = new MemoryStream(bytes);
 
             log.LogInformation($"Uploading file to dropbox");
-            await _dropboxClient.Files.UploadAsync(new UploadArg($"{TaggedFolderPath}/{file.Name}"), stream);
+            var uploadPath = file.PathDisplay.Replace("[untagged]", "[tagged]");
+            await _dropboxClient.Files.UploadAsync(new UploadArg(uploadPath), stream);
 
             log.LogInformation($"Deleting file from disk");
             File.Delete($"{_tempPath}\\{file.Name}");
@@ -253,7 +256,7 @@ namespace ID3Bot
         private async Task DownloadFileAndSaveLocally(Metadata file, ILogger log)
         {
             log.LogInformation($"Downloading {file.Name} from dropbox");
-            var downloadResponse = await _dropboxClient.Files.DownloadAsync($"{UntaggedFolderPath}/{file.Name}");
+            var downloadResponse = await _dropboxClient.Files.DownloadAsync(file.PathDisplay);
             var content = await downloadResponse.GetContentAsByteArrayAsync();
 
             log.LogInformation($"Saving {file.Name} to disk");
