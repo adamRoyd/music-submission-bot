@@ -64,7 +64,6 @@ namespace ID3Bot
                 try
                 {
                     await DownloadFileAndSaveLocally(file, log);
-
                     SetId3Tags(file.Name, log);
                     await UploadFileAndDeleteLocally(file, log);
                 }
@@ -251,6 +250,9 @@ namespace ID3Bot
 
             log.LogInformation($"Deleting file from disk");
             File.Delete($"{_tempPath}\\{file.Name}");
+
+            log.LogInformation($"Deleting file from untagged folder");
+            await _dropboxClient.Files.DeleteV2Async(new DeleteArg(file.PathDisplay));
         }
 
         private async Task DownloadFileAndSaveLocally(Metadata file, ILogger log)
